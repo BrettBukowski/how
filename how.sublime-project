@@ -1,0 +1,10 @@
+{
+  "settings": {
+    "GoSublime": {
+      "env": {
+        "GOPATH": "$HOME/src/projects/how"
+      }
+    }
+  },
+  "folders": []
+}
