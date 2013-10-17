@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 )
 
@@ -47,8 +48,11 @@ func extractLinks(numberToExtract *int, htmlDoc string) []string {
 		if n.Type == html.ElementNode && n.Data == "a" {
 			for _, a := range n.Attr {
 				if a.Key == "href" {
-					links = append(links, a.Val)
-					break
+					matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", a.Val)
+					if matched {
+						links = append(links, a.Val)
+						break
+					}
 				}
 			}
 		}
