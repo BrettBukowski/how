@@ -35,7 +35,15 @@ func getResult(url string) (string, error) {
 	return "An error occurred", err
 }
 
-func extractLinks(numberToExtract *int, htmlDoc string) []string {
+func normalizeLink(link string) string {
+	r, _ := regexp.Compile("&[A-Za-z0-9]+=[A-Za-z0-9-_]+")
+	link = r.ReplaceAllString(link, "")
+	r, _ = regexp.Compile("/url\\?q=")
+	link = r.ReplaceAllString(link, "")
+	return fmt.Sprint(link, "?answertab=votes")
+}
+
+func extractLinks(numberToExtract int, htmlDoc string) []string {
 	doc, err := html.Parse(strings.NewReader(htmlDoc))
 	if err != nil {
 		fmt.Println(err)
@@ -50,7 +58,7 @@ func extractLinks(numberToExtract *int, htmlDoc string) []string {
 				if a.Key == "href" {
 					matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", a.Val)
 					if matched {
-						links = append(links, a.Val)
+						links = append(links, normalizeLink(a.Val))
 						break
 					}
 				}
