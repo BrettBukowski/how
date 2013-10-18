@@ -64,7 +64,7 @@ func extractLinks(numberToExtract int, htmlDoc string) []string {
 				}
 			}
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
+		for c := n.FirstChild; c != nil && len(links) < numberToExtract; c = c.NextSibling {
 			f(c)
 		}
 	}
@@ -88,7 +88,7 @@ func searchUrl(https *bool, query []string) string {
 func main() {
 	https := flag.Bool("https", false, "Use https")
 	numAnswers := flag.Int("answers", 1, "Number of answers to retrieve")
-	// onlyLinks := flag.Bool("links", false, "Only display answer links, not the result text")
+	onlyLinks := flag.Bool("links", false, "Only display answer links, not the result text")
 
 	flag.Parse()
 
@@ -98,10 +98,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	var url string = searchUrl(https, flag.Args())
-
-	fmt.Println("url: ", url)
-	fmt.Println("answers: ", *numAnswers)
+	url := searchUrl(https, flag.Args())
 
 	body, err := getResult(url)
 
@@ -110,11 +107,12 @@ func main() {
 		os.Exit(2)
 	}
 
-	// fmt.Println(body)
+	links := extractLinks(*numAnswers, body)
 
-	links := extractLinks(numAnswers, body)
-
-	for i := 0; i < len(links); i++ {
-		fmt.Println(links[i])
+	if *onlyLinks {
+		for i := 0; i < len(links); i++ {
+			fmt.Println(links[i])
+		}
+		os.Exit(0)
 	}
 }
