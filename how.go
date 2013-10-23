@@ -35,6 +35,16 @@ func getResult(url string) (string, error) {
 	return "An error occurred", err
 }
 
+func fetchPage(url string) string {
+	page, err := getResult(url)
+
+	if err != nil {
+		fmt.Println("Error retrieving ", url)
+		os.Exit(2)
+	}
+	return page
+}
+
 func normalizeLink(link string) string {
 	r, _ := regexp.Compile("&[A-Za-z0-9]+=[A-Za-z0-9-_]+")
 	link = r.ReplaceAllString(link, "")
@@ -85,6 +95,38 @@ func searchUrl(https *bool, query []string) string {
 	return fmt.Sprint(pre, body, "%20", strings.Join(query, "%20"))
 }
 
+func getInstructions(links []string) {
+	var f func(n *html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "div" {
+			for _, a := range n.Attr {
+				if a.Key == "class" && strings.Contains(a.Val, "answer") {
+					fmt.Println(n.Data)
+					break
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+
+	var page string
+	var doc *html.Node
+	var err error
+	for _, url := range links {
+		fmt.Println(url)
+		page = fetchPage(url)
+		doc, err = html.Parse(strings.NewReader(page))
+
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(2)
+		}
+		f(doc)
+	}
+}
+
 func main() {
 	https := flag.Bool("https", false, "Use https")
 	numAnswers := flag.Int("answers", 1, "Number of answers to retrieve")
@@ -99,15 +141,8 @@ func main() {
 	}
 
 	url := searchUrl(https, flag.Args())
-
-	body, err := getResult(url)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
-	}
-
-	links := extractLinks(*numAnswers, body)
+	page := fetchPage(url)
+	links := extractLinks(*numAnswers, page)
 
 	if *onlyLinks {
 		for i := 0; i < len(links); i++ {
@@ -115,4 +150,6 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
+	getInstructions(links)
 }
