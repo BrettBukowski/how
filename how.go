@@ -1,10 +1,9 @@
 package main
 
 import (
-	"code.google.com/p/go.net/html"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"github.com/PuerkitoBio/goquery"
 	"math/rand"
 	"net/http"
 	"os"
@@ -20,29 +19,20 @@ var userAgents = []string{
 	"Mozilla/5.0 (Windows; Windows NT 6.1) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.46 Safari/536.5",
 }
 
-func getResult(url string) (string, error) {
+func fetchPage(url string) *goquery.Document {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("User-Agent", userAgents[rand.Intn(len(userAgents))])
-
-	resp, err := client.Do(req)
+	resp, _ := client.Do(req)
 	defer resp.Body.Close()
 
-	if resp.StatusCode == 200 {
-		body, err := ioutil.ReadAll(resp.Body)
-		return string(body), err
-	}
-	return "An error occurred", err
-}
+	var doc *goquery.Document
+	var e error
 
-func fetchPage(url string) string {
-	page, err := getResult(url)
-
-	if err != nil {
-		fmt.Println("Error retrieving ", url)
-		os.Exit(2)
+	if doc, e = goquery.NewDocumentFromReader(resp.Body); e != nil {
+		panic(e.Error())
 	}
-	return page
+	return doc
 }
 
 func normalizeLink(link string) string {
@@ -53,33 +43,18 @@ func normalizeLink(link string) string {
 	return fmt.Sprint(link, "?answertab=votes")
 }
 
-func extractLinks(numberToExtract int, htmlDoc string) []string {
-	doc, err := html.Parse(strings.NewReader(htmlDoc))
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
-	}
-
+func extractLinks(doc *goquery.Document, numberToExtract int) []string {
 	var links []string
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "a" {
-			for _, a := range n.Attr {
-				if a.Key == "href" {
-					matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", a.Val)
-					if matched {
-						links = append(links, normalizeLink(a.Val))
-						break
-					}
-				}
-			}
+
+	doc.Find("#res a").Each(func(i int, s *goquery.Selection) {
+		href, _ := s.Attr("href")
+		matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", href)
+		if matched {
+			links = append(links, normalizeLink(href))
 		}
-		for c := n.FirstChild; c != nil && len(links) < numberToExtract; c = c.NextSibling {
-			f(c)
-		}
-	}
-	f(doc)
-	return links
+	})
+
+	return links[0:numberToExtract]
 }
 
 func searchUrl(https *bool, query []string) string {
@@ -96,34 +71,28 @@ func searchUrl(https *bool, query []string) string {
 }
 
 func getInstructions(links []string) {
-	var f func(n *html.Node)
-	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "div" {
-			for _, a := range n.Attr {
-				if a.Key == "class" && strings.Contains(a.Val, "answer") {
-					fmt.Println(n.Data)
-					break
-				}
-			}
-		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-	}
-
-	var page string
-	var doc *html.Node
-	var err error
+	var doc *goquery.Document
 	for _, url := range links {
 		fmt.Println(url)
-		page = fetchPage(url)
-		doc, err = html.Parse(strings.NewReader(page))
+		doc = fetchPage(url)
+		answer := doc.Find(".answer").First().Find(".post-text")
+		text := answer.Text()
+		answer.Find("a").Each(func(i int, s *goquery.Selection) {
+			href, _ := s.Attr("href")
+			linkText := s.Text()
 
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(2)
-		}
-		f(doc)
+			var mdLink = []string{
+				"[",
+				linkText,
+				"](",
+				href,
+				")",
+			}
+			text = strings.Replace(text, linkText, strings.Join(mdLink, ""), 1)
+		})
+
+		fmt.Println("")
+		fmt.Println(text)
 	}
 }
 
@@ -142,7 +111,7 @@ func main() {
 
 	url := searchUrl(https, flag.Args())
 	page := fetchPage(url)
-	links := extractLinks(*numAnswers, page)
+	links := extractLinks(page, *numAnswers)
 
 	if *onlyLinks {
 		for i := 0; i < len(links); i++ {
