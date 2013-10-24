@@ -57,11 +57,11 @@ func extractLinks(doc *goquery.Document, numberToExtract int) []string {
 	return links[0:numberToExtract]
 }
 
-func searchUrl(https *bool, query []string) string {
+func searchUrl(https bool, query []string) string {
 	body := "google.com/search?q=site:stackoverflow.com"
 
 	var pre string
-	if *https {
+	if https {
 		pre = "https://encrypted."
 	} else {
 		pre = "http://"
@@ -74,26 +74,40 @@ func getInstructions(links []string) {
 	var doc *goquery.Document
 	for _, url := range links {
 		fmt.Println(url)
-		doc = fetchPage(url)
-		answer := doc.Find(".answer").First().Find(".post-text")
-		text := answer.Text()
-		answer.Find("a").Each(func(i int, s *goquery.Selection) {
-			href, _ := s.Attr("href")
-			linkText := s.Text()
 
-			var mdLink = []string{
-				"[",
-				linkText,
-				"](",
-				href,
-				")",
-			}
-			text = strings.Replace(text, linkText, strings.Join(mdLink, ""), 1)
-		})
+		doc = fetchPage(url)
+		text := convertLinksToMarkdown(doc.Find(".answer").First().Find(".post-text"))
 
 		fmt.Println("")
 		fmt.Println(text)
 	}
+}
+
+func convertLinksToMarkdown(selection *goquery.Selection) string {
+	text := selection.Text()
+
+	selection.Find("a").Each(func(i int, s *goquery.Selection) {
+		href, _ := s.Attr("href")
+		linkText := s.Text()
+
+		var mdLink = []string{
+			"[",
+			linkText,
+			"](",
+			href,
+			")",
+		}
+
+		if strings.EqualFold(linkText, href) {
+			mdLink = []string{
+				"<", linkText, ">",
+			}
+		}
+
+		text = strings.Replace(text, linkText, strings.Join(mdLink, ""), 1)
+	})
+
+	return text
 }
 
 func main() {
@@ -109,7 +123,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	url := searchUrl(https, flag.Args())
+	url := searchUrl(*https, flag.Args())
 	page := fetchPage(url)
 	links := extractLinks(page, *numAnswers)
 
