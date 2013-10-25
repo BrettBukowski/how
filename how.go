@@ -19,9 +19,19 @@ var userAgents = []string{
 	"Mozilla/5.0 (Windows; Windows NT 6.1) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.46 Safari/536.5",
 }
 
-func fetchPage(url string) *goquery.Document {
+// URL and Title of each
+// result link
+type link struct {
+	url   string
+	title string
+}
+
+// Get the document for the link.
+// Requests the page with a randomized user-agent
+// so Google doesn't get suspicious. ಠ_ಠ
+func (l *link) fetchPage() *goquery.Document {
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
+	req, _ := http.NewRequest("GET", l.url, nil)
 	req.Header.Add("User-Agent", userAgents[rand.Intn(len(userAgents))])
 	resp, _ := client.Do(req)
 	defer resp.Body.Close()
@@ -35,29 +45,36 @@ func fetchPage(url string) *goquery.Document {
 	return doc
 }
 
-func normalizeLink(link string) string {
+// Google wraps its redirect tracker around non-https
+// result links. Remove that. And make sure Stackoverflow's
+// answer tab is focused.
+func (l *link) normalizeResultUrl() {
 	r, _ := regexp.Compile("&[A-Za-z0-9]+=[A-Za-z0-9-_]+")
-	link = r.ReplaceAllString(link, "")
+	l.url = r.ReplaceAllString(l.url, "")
 	r, _ = regexp.Compile("/url\\?q=")
-	link = r.ReplaceAllString(link, "")
-	return fmt.Sprint(link, "?answertab=votes")
+	l.url = r.ReplaceAllString(l.url, "")
+	l.url = fmt.Sprint(l.url, "?answertab=votes")
 }
 
-func extractLinks(doc *goquery.Document, numberToExtract int) []string {
-	var links []string
+// Gleam result links out of Google's search result page.
+func extractLinks(doc *goquery.Document, numberToExtract int) []link {
+	var links []link
 
 	doc.Find("#res a").Each(func(i int, s *goquery.Selection) {
 		href, _ := s.Attr("href")
 		matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", href)
 		if matched {
-			links = append(links, normalizeLink(href))
+			resultLink := link{href, s.Text()}
+			resultLink.normalizeResultUrl()
+			links = append(links, resultLink)
 		}
 	})
 
 	return links[0:numberToExtract]
 }
 
-func searchUrl(https bool, query []string) string {
+// Build the Google search URL.
+func searchLink(https bool, query []string) link {
 	body := "google.com/search?q=site:stackoverflow.com"
 
 	var pre string
@@ -67,22 +84,32 @@ func searchUrl(https bool, query []string) string {
 		pre = "http://"
 	}
 
-	return fmt.Sprint(pre, body, "%20", strings.Join(query, "%20"))
+	return link{
+		fmt.Sprint(pre, body, "%20", strings.Join(query, "%20")),
+		strings.Join(query, " "),
+	}
 }
 
-func getInstructions(links []string) {
-	var doc *goquery.Document
-	for _, url := range links {
-		fmt.Println(url)
+// Extract the top answer out of the
+// Stackoverflow page.
+func printInstructions(links []link) {
+	numberOfResults := len(links)
 
-		doc = fetchPage(url)
-		text := convertLinksToMarkdown(doc.Find(".answer").First().Find(".post-text"))
+	for i, link := range links {
+		border := strings.Repeat("*", len(link.url)+5)
+		if numberOfResults > 1 {
+			fmt.Printf("%s\n%d. %s\n%s\n\n", border, i+1, link.url, border)
+		} else {
+			fmt.Printf("%s\n%s\n%s\n\n", border, link.url, border)
+		}
 
-		fmt.Println("")
+		text := convertLinksToMarkdown(link.fetchPage().Find(".answer").First().Find(".post-text"))
+
 		fmt.Println(text)
 	}
 }
 
+// For every <a> in the selection, replace with a MD-style link.
 func convertLinksToMarkdown(selection *goquery.Selection) string {
 	text := selection.Text()
 
@@ -123,16 +150,16 @@ func main() {
 		os.Exit(2)
 	}
 
-	url := searchUrl(*https, flag.Args())
-	page := fetchPage(url)
+	link := searchLink(*https, flag.Args())
+	page := link.fetchPage()
 	links := extractLinks(page, *numAnswers)
 
 	if *onlyLinks {
-		for i := 0; i < len(links); i++ {
-			fmt.Println(links[i])
+		for i, link := range links {
+			fmt.Printf("%d. [%s](%s)\n", i+1, link.title, link.url)
 		}
 		os.Exit(0)
 	}
 
-	getInstructions(links)
+	printInstructions(links)
 }
