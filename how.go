@@ -29,7 +29,7 @@ type link struct {
 // Get the document for the link.
 // Requests the page with a randomized user-agent
 // so Google doesn't get suspicious. ಠ_ಠ
-func (l *link) fetchPage() *goquery.Document {
+func (l *link) FetchPage() *goquery.Document {
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", l.url, nil)
 	req.Header.Add("User-Agent", userAgents[rand.Intn(len(userAgents))])
@@ -48,7 +48,7 @@ func (l *link) fetchPage() *goquery.Document {
 // Google wraps its redirect tracker around non-https
 // result links. Remove that. And make sure Stackoverflow's
 // answer tab is focused.
-func (l *link) normalizeResultUrl() {
+func (l *link) NormalizeResultUrl() {
 	r, _ := regexp.Compile("&[A-Za-z0-9]+=[A-Za-z0-9-_]+")
 	l.url = r.ReplaceAllString(l.url, "")
 	r, _ = regexp.Compile("/url\\?q=")
@@ -65,7 +65,7 @@ func extractLinks(doc *goquery.Document, numberToExtract int) []link {
 		matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", href)
 		if matched {
 			resultLink := link{href, s.Text()}
-			resultLink.normalizeResultUrl()
+			resultLink.NormalizeResultUrl()
 			links = append(links, resultLink)
 		}
 	})
@@ -103,7 +103,7 @@ func printInstructions(links []link) {
 			fmt.Printf("%s\n%s\n%s\n\n", border, link.url, border)
 		}
 
-		text := convertLinksToMarkdown(link.fetchPage().Find(".answer").First().Find(".post-text"))
+		text := convertLinksToMarkdown(link.FetchPage().Find(".answer").First().Find(".post-text"))
 
 		fmt.Println(text)
 	}
@@ -151,7 +151,7 @@ func main() {
 	}
 
 	link := searchLink(*https, flag.Args())
-	page := link.fetchPage()
+	page := link.FetchPage()
 	links := extractLinks(page, *numAnswers)
 
 	if *onlyLinks {
