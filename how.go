@@ -74,7 +74,7 @@ func extractLinks(doc *goquery.Document, numberToExtract int) []link {
 }
 
 // Build the Google search URL.
-func searchLink(https bool, query []string) link {
+func searchLink(query []string, https bool) link {
 	body := "google.com/search?q=site:stackoverflow.com"
 
 	var pre string
@@ -94,23 +94,24 @@ func searchLink(https bool, query []string) link {
 // Stackoverflow page.
 func printInstructions(links []link) {
 	numberOfResults := len(links)
+	results := make(chan string, numberOfResults)
 
-	for i, link := range links {
-		border := strings.Repeat("*", len(link.url)+5)
-		if numberOfResults > 1 {
-			fmt.Printf("%s\n%d. %s\n%s\n\n", border, i+1, link.url, border)
-		} else {
-			fmt.Printf("%s\n%s\n%s\n\n", border, link.url, border)
+	for _, link := range links {
+		go fetchFormattedResult(link, results)
+	}
+
+	for i := 0; i < numberOfResults; i++ {
+		select {
+		case msg := <-results:
+			fmt.Println(msg)
 		}
-
-		text := convertLinksToMarkdown(link.FetchPage().Find(".answer").First().Find(".post-text"))
-
-		fmt.Println(text)
 	}
 }
 
 // For every <a> in the selection, replace with a MD-style link.
-func convertLinksToMarkdown(selection *goquery.Selection) string {
+// Stuffs the results into the supplied channel.
+func fetchFormattedResult(l link, results chan<- string) {
+	selection := l.FetchPage().Find(".answer").First().Find(".post-text")
 	text := selection.Text()
 
 	selection.Find("a").Each(func(i int, s *goquery.Selection) {
@@ -133,8 +134,13 @@ func convertLinksToMarkdown(selection *goquery.Selection) string {
 
 		text = strings.Replace(text, linkText, strings.Join(mdLink, ""), 1)
 	})
+	results <- linkHeading(l) + text
+}
 
-	return text
+// Header for every link
+func linkHeading(l link) string {
+	border := strings.Repeat("*", len(l.url)+5)
+	return fmt.Sprintf("%s\n%s\n%s\n\n", border, l.url, border)
 }
 
 func main() {
@@ -143,14 +149,15 @@ func main() {
 	onlyLinks := flag.Bool("links", false, "Only display answer links, not the result text")
 
 	flag.Parse()
+	args := flag.Args()
 
-	if len(flag.Args()) == 0 {
+	if len(args) == 0 {
 		flag.PrintDefaults()
 		fmt.Println("Supply a question")
 		os.Exit(2)
 	}
 
-	link := searchLink(*https, flag.Args())
+	link := searchLink(args, *https)
 	page := link.FetchPage()
 	links := extractLinks(page, *numAnswers)
 
