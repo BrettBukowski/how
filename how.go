@@ -29,20 +29,26 @@ type link struct {
 // Get the document for the link.
 // Requests the page with a randomized user-agent
 // so Google doesn't get suspicious. ಠ_ಠ
-func (l *link) FetchPage() *goquery.Document {
+func (l *link) FetchPage() (*goquery.Document, error) {
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", l.url, nil)
 	req.Header.Add("User-Agent", userAgents[rand.Intn(len(userAgents))])
-	resp, _ := client.Do(req)
+
+	var resp *http.Response
+	var e error
+
+	if resp, e = client.Do(req); e != nil {
+		return nil, e
+	}
+
 	defer resp.Body.Close()
 
 	var doc *goquery.Document
-	var e error
 
 	if doc, e = goquery.NewDocumentFromReader(resp.Body); e != nil {
 		panic(e.Error())
 	}
-	return doc
+	return doc, nil
 }
 
 // Google wraps its redirect tracker around non-https
@@ -111,7 +117,8 @@ func printInstructions(links []link) {
 // For every <a> in the selection, replace with a MD-style link.
 // Stuffs the results into the supplied channel.
 func fetchFormattedResult(l link, results chan<- string) {
-	selection := l.FetchPage().Find(".answer").First().Find(".post-text")
+	doc, _ := l.FetchPage()
+	selection := doc.Find(".answer").First().Find(".post-text")
 	text := selection.Text()
 
 	selection.Find("a").Each(func(i int, s *goquery.Selection) {
@@ -158,7 +165,11 @@ func main() {
 	}
 
 	link := searchLink(args, *https)
-	page := link.FetchPage()
+	page, e := link.FetchPage()
+	if e != nil {
+		fmt.Println("Unable to fetch results due to connection problem.")
+		os.Exit(-1)
+	}
 	links := extractLinks(page, *numAnswers)
 
 	if *onlyLinks {

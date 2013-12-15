@@ -54,7 +54,9 @@ func Test(t *testing.T) {
 	g.Describe("link#FetchPage", func() {
 		g.It("Should make a successful http request to get the page", func() {
 			l := searchLink([]string{"how", "do", "i"}, false)
-			g.Assert(l.FetchPage().Find("body").Length()).Equal(1)
+			doc, err := l.FetchPage()
+			g.Assert(err).Equal(nil)
+			g.Assert(doc.Find("body").Length()).Equal(1)
 		})
 	})
 
