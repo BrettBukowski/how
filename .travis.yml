@@ -5,3 +5,7 @@ go:
 install:
   - go get github.com/PuerkitoBio/goquery
   - go get github.com/franela/goblin
+  - go get github.com/inconshreveable/go-update
+before_script:
+  - export GOPATH=$HOME/gopath/src/github.com/BrettBukowski/how:$GOPATH
+  - cd $HOME/gopath/src/github.com/BrettBukowski/how/src/how

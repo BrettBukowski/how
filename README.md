@@ -12,12 +12,14 @@ Inspired by the python-based [howdoi project](https://github.com/gleitz/howdoi).
 
 ## Options
 
-`-answers=x`: Number of answers to retrieve and display (default = 1)  
-`-https=false`: Whether to use https (default = false)  
-`-links=false`: Only display answer links, not the result text  
+`--answers=x`: Number of answers to retrieve and display (default = 1)  
+`--https=false`: Whether to use https (default = false)  
+`--links=false`: Only display answer links, not the result text  
+`--version`: Display the version number and exit  
+`--update`: Update the binary to the latest version, if a newer version is available
 
 ## Installation
 
-Download and extract the [built binary](https://github.com/BrettBukowski/how/releases/latest) for your platform, put it in your path, and run.
+Download the [binary](https://github.com/BrettBukowski/how/releases/latest) for your platform, rename it, put it somewhere in your path, and run.
 
 :point_right: :grey_question:

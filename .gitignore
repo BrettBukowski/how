@@ -21,4 +21,6 @@ _testmain.go
 
 *.exe
 
-/src/
+/src/code.google.com
+/src/github.com
+/src/bitbucket.org
