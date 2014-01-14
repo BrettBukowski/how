@@ -1,6 +1,8 @@
+[![Build Status](https://travis-ci.org/BrettBukowski/how.png)](https://travis-ci.org/BrettBukowski/how)
+
 # how
 
-[![Build Status](https://travis-ci.org/BrettBukowski/how.png)](https://travis-ci.org/BrettBukowski/how)
+![](https://dl.dropboxusercontent.com/u/302368/github/gopher.png)
 
 Quickly search for solutions on StackOverflow via the command line.
 
