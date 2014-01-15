@@ -20,6 +20,6 @@ Inspired by the python-based [howdoi project](https://github.com/gleitz/howdoi).
 
 ## Installation
 
-Download the [binary](https://github.com/BrettBukowski/how/releases/latest) for your platform, rename it, put it somewhere in your path, and run.
+Download the [binary](https://github.com/BrettBukowski/how/releases/latest) for your platform, rename it to simply `how`, put it somewhere in your path, and run.
 
 :point_right: :grey_question:
