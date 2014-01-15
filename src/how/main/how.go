@@ -1,4 +1,4 @@
-package how
+package main
 
 import (
 	"how/client"
