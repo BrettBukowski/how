@@ -36,7 +36,7 @@ func getReleases() []map[string]interface{} {
 
 func getNewestVersion() float64 {
 	releases := getReleases()
-	latestInfo := releases[len(releases)-1]
+	latestInfo := releases[0]
 	latestVersion, _ := strconv.ParseFloat(latestInfo["name"].(string), 64)
 
 	return latestVersion
