@@ -17,15 +17,30 @@ func extractPages(doc *goquery.Document, numberToExtract int) []page.Page {
 
 	doc.Find("#res a").Each(func(i int, s *goquery.Selection) {
 		href, _ := s.Attr("href")
-		matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", href)
-		if matched {
+
+		if acceptResultUrl(href) {
 			resultPage := page.Page{href, s.Text()}
 			resultPage.NormalizeResultUrl()
 			links = append(links, resultPage)
 		}
 	})
 
+	numberOfLinks := len(links)
+
+	if numberToExtract > numberOfLinks {
+		numberToExtract = numberOfLinks - 1
+	}
+
+	if numberToExtract <= 0 {
+		return links
+	}
+
 	return links[0:numberToExtract]
+}
+
+func acceptResultUrl(url string) bool {
+	matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", url)
+	return matched && !strings.Contains(url, "stackoverflow.com/questions/tagged/") && !strings.Contains(url, "stackoverflow.com/tags")
 }
 
 // Build the Google search URL.
@@ -110,7 +125,7 @@ func Main() {
 	args := flag.Args()
 
 	if *showVersion {
-		fmt.Printf("%1.1f", version.Version)
+		fmt.Printf("%1.1f\n", version.Version)
 		os.Exit(0)
 	}
 
