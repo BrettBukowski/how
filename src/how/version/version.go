@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	Version     = 1.2
+	Version     = 1.3
 	Url         = "https://api.github.com/repos/brettbukowski/how/releases"
-	DownloadUrl = "https://github.com/BrettBukowski/how/releases/download/%.1f/how-%s"
+	DownloadUrl = "https://github.com/BrettBukowski/how/releases/download/v%.1f/how-%s"
 )
 
 var releases = make([]map[string]interface{}, 10)
@@ -43,7 +43,7 @@ func getNewestVersion() float64 {
 }
 
 func download(url string) (err error, errRecover error) {
-	fmt.Println("Downloading from <%s>", url)
+	fmt.Printf("Downloading from <%s>\n", url)
 
 	dl := goupdate.NewDownload(url)
 
