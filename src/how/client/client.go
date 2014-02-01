@@ -38,6 +38,8 @@ func extractPages(doc *goquery.Document, numberToExtract int) []page.Page {
 	return links[0:numberToExtract]
 }
 
+// Determines whether the given url is a
+// legit Stackoverflow answer link.
 func acceptResultUrl(url string) bool {
 	matched, _ := regexp.MatchString("^(/url\\?q=)?http://(meta.)?stackoverflow.com", url)
 	return matched && !strings.Contains(url, "stackoverflow.com/questions/tagged/") && !strings.Contains(url, "stackoverflow.com/tags")
@@ -82,7 +84,14 @@ func printInstructions(links []page.Page) {
 // Stuffs the results into the supplied channel.
 func fetchFormattedResult(l page.Page, results chan<- string) {
 	doc, _ := l.Fetch()
-	selection := doc.Find(".answer").First().Find(".post-text")
+	answer := doc.Find(".answer")
+
+	if answer.Nodes == nil {
+		results <- fmt.Sprintf("No answers given for <%s>", l.Url)
+		return
+	}
+
+	selection := answer.First().Find(".post-text")
 	text := selection.Text()
 
 	selection.Find("a").Each(func(i int, s *goquery.Selection) {

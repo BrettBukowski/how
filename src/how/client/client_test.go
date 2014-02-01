@@ -53,5 +53,16 @@ func Test(t *testing.T) {
 			g.Assert(strings.Contains(resultText, linkHeading(l))).Equal(true)
 			g.Assert(strings.Count(resultText, "\n") > 6).Equal(true)
 		})
+
+		g.It("Should not panic when no answers are given for a question", func() {
+			l := page.Page{
+				"http://stackoverflow.com/questions/21370072/multiple-files-to-download-and-to-rename-using-curl?answertab=votes",
+				"Multiple files to download and to rename using curl",
+			}
+			result := make(chan string, 1)
+			go fetchFormattedResult(l, result)
+			resultText := <-result
+			g.Assert(strings.Contains(resultText, "No answers given"))
+		})
 	})
 }
