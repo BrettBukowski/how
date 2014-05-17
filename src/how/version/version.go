@@ -3,8 +3,8 @@ package version
 import (
 	"encoding/json"
 	"fmt"
-	goupdate "github.com/inconshreveable/go-update"
 	"how/request"
+	"how/update"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -45,7 +45,7 @@ func getNewestVersion() float64 {
 func download(url string) (err error, errRecover error) {
 	fmt.Printf("Downloading from <%s>\n", url)
 
-	dl := goupdate.NewDownload(url)
+	dl := update.NewDownload(url)
 
 	if err = dl.Get(); err != nil || !dl.Available {
 		return
@@ -53,7 +53,7 @@ func download(url string) (err error, errRecover error) {
 
 	fmt.Println("Updating...")
 
-	if err, errRecover = goupdate.FromFile(dl.Path); err != nil || errRecover != nil {
+	if err, errRecover = update.FromFile(dl.Path); err != nil || errRecover != nil {
 		return
 	}
 
@@ -87,7 +87,7 @@ func Update() bool {
 	var err error
 	var errRecover error
 
-	if err = goupdate.SanityCheck(); err != nil {
+	if err = update.SanityCheck(); err != nil {
 		fmt.Println(err)
 		return false
 	}
