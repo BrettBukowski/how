@@ -10,10 +10,10 @@ func Test(t *testing.T) {
 
 	g.Describe("Get", func() {
 		g.It("Errors when connection refused", func() {
-			_, err := Get("http://localhost", map[string]string{
+			_, err := Get("http://localhost:8000", map[string]string{
 				"foo": "bar",
 			})
-			g.Assert(err.Error()).Equal("Get http://localhost: dial tcp 127.0.0.1:80: connection refused")
+			g.Assert(err.Error()).Equal("Get http://localhost:8000: dial tcp 127.0.0.1:8000: connection refused")
 		})
 	})
 }
