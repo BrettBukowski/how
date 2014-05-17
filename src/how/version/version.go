@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	Version     = 1.3
+	Version     = 1.4
 	Url         = "https://api.github.com/repos/brettbukowski/how/releases"
 	DownloadUrl = "https://github.com/BrettBukowski/how/releases/download/v%.1f/how-%s"
 )
